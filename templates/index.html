@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facial Health Analysis</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background: #f0f2f5;
+            padding: 2rem;
+        }
+
+        .error-message {
+            padding: 1rem;
+            background: #f8d7da;
+            color: #721c24;
+            border-radius: 4px;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .error-message i {
+            font-size: 1.2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-section {
+            text-align: center;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .upload-box {
+            border: 2px dashed #3498db;
+            border-radius: 10px;
+            padding: 2rem;
+            margin: 1rem 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .upload-box:hover {
+            border-color: #2980b9;
+            background: #e3f2fd;
+        }
+
+        #preview-image {
+            max-width: 300px;
+            margin: 1rem auto;
+            border-radius: 8px;
+            display: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .analyze-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .analyze-btn:hover:not(:disabled) {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .analyze-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .loading-dots {
+            display: inline-block;
+            margin-left: 8px;
+        }
+
+        .loading-dots::after {
+            content: ".";
+            animation: dots 1.5s infinite steps(3);
+        }
+
+        @keyframes dots {
+
+            0%,
+            20% {
+                content: ".";
+            }
+
+            40% {
+                content: "..";
+            }
+
+            60% {
+                content: "...";
+            }
+
+            80%,
+            100% {
+                content: "";
+            }
+        }
+
+        .results-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease;
+        }
+
+        .results-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .metric-card {
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 1rem 0;
+        }
+
+        .metric-scale {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .health-insights {
+            grid-column: 1 / -1;
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .health-insights h3 {
+            margin-bottom: 1rem;
+        }
+
+        .paralysis-warning {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        /* Previous CSS styles for metrics and insights remain the same */
+        /* ... (include all previous CSS styles from earlier version) ... */
+        .analysis-report {
+            max-width: 1200px;
+            margin: 2rem auto;
+            font-family: 'Segoe UI', system-ui;
+        }
+
+        .critical-alert {
+            background: #ffe6e6;
+            border-left: 4px solid #ff4444;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-radius: 8px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .metric-card {
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-card.red {
+            background: #ffebee;
+            border: 2px solid #ff4444;
+        }
+
+        .metric-card.green {
+            background: #e8f5e9;
+            border: 2px solid #4CAF50;
+        }
+
+        .metric-card.orange {
+            background: #fff3e0;
+            border: 2px solid #FF9800;
+        }
+
+        .metric-value {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin: 1rem 0;
+            color: #2c3e50;
+        }
+
+        .insight-section {
+            display: grid;
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .insight-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .insight-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .insight-list li {
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: #f8f9fa;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .condition-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .condition {
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .condition.red {
+            background: #ffebee;
+            border: 2px solid #ff4444;
+        }
+
+        .condition.orange {
+            background: #fff3e0;
+            border: 2px solid #FF9800;
+        }
+
+        .recommendation-section {
+            background: #e3f2fd;
+            padding: 2rem;
+            border-radius: 12px;
+        }
+
+        .action-steps {
+            display: grid;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .step-icon {
+            background: #2196F3;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .warning-icon {
+            color: #ff4444;
+            font-size: 1.2rem;
+        }
+
+        h3,
+        h4,
+        h5 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+        }
+
+        h4 {
+            font-size: 1.2rem;
+        }
+
+        .health-insights {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .health-insights:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .health-insights h3 {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .health-insights p {
+            font-size: 1rem;
+            color: #4a4a4a;
+            line-height: 1.6;
+            margin: 0.5rem 0;
+            text-align: center;
+        }
+        
+        .health-insights:hover h3 {
+            color: #1565c0;
+        }
+        
+        .health-insights p span {
+            font-weight: bold;
+            color: #1565c0;
+            background: #e3f2fd;
+            padding: 0.2rem 0.5rem;
+            border-radius: 5px;
+        }
+        
+        .health-insights::before {
+            content: "🧠";
+            font-size: 3rem;
+            display: block;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <div class="header">
+            <h1>Facial Health Analysis</h1>
+            <p>Upload a photo for comprehensive facial symmetry and health analysis</p>
+        </div>
+
+        <div class="upload-section">
+            <div class="upload-box" onclick="document.getElementById('file-input').click()">
+                <p>Click to upload a photo</p>
+                <input type="file" id="file-input" hidden accept="image/*">
+            </div>
+            <img id="preview-image" alt="Preview">
+            <button class="analyze-btn" id="analyze-btn" onclick="analyzePhoto()">
+                Analyze Photo
+            </button>
+        </div>
+
+        <div class="results-section" id="results">
+            <div class="metric-card">
+                <h3>Facial Symmetry Score</h3>
+                <div class="metric-value" id="symmetry-score">-</div>
+                <div class="metric-scale">(0-100 scale)</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Golden Ratio Proportion</h3>
+                <div class="metric-value" id="proportion-score">-</div>
+                <div class="metric-scale">(1.618 ideal)</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Alignment Score</h3>
+                <div class="metric-value" id="alignment-score">-</div>
+                <div class="metric-scale">(1.618 ideal)</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Facial Paralysis Detection</h3>
+                <div class="metric-value" id="paralysis-detection">-</div>
+                <div class="metric-scale">Asymmetry Alert</div>
+            </div>
+
+            <div class="health-insights">
+                <h3>AI Health Insights</h3>
+                <p id="insights-text">Analysis results will appear here...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const resultsSection = document.getElementById('results');
+        let originalButtonText = analyzeBtn.innerHTML;
+
+        async function analyzePhoto() {
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showError('Please select a file first!');
+                return;
+            }
+
+            try {
+                // Disable button and show loading state
+                analyzeBtn.innerHTML = 'Analyzing<span class="loading-dots"></span>';
+                analyzeBtn.disabled = true;
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await handleResponse(response);
+                console.log(data);
+
+
+                resultsSection.classList.add('visible');
+                updateResults(data);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError(`Analysis failed: ${error.message}`);
+            } finally {
+                analyzeBtn.innerHTML = originalButtonText;
+                analyzeBtn.disabled = false;
+            }
+        }
+
+        async function handleResponse(response) {
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Server error: ${response.status} - ${errorText}`);
+            }
+
+            try {
+                return await response.json();
+                
+            } catch (error) {
+                throw new Error('Invalid JSON response from server');
+            }
+        }
+
+        function updateResults(data) {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            document.getElementById('symmetry-score').textContent = data.symmetry_score?.toFixed(2) || 'N/A';
+            document.getElementById('proportion-score').textContent = data.proportion_score?.toFixed(2) || 'N/A';
+            document.getElementById('alignment-score').textContent = data.alignment_score?.toFixed(2) || 'N/A';
+            document.getElementById('paralysis-detection').innerHTML =
+                data.paralysis_detection === "Possible Paralysis Detected" ?
+                    `<span class="paralysis-warning">${data.paralysis_detection}</span>` :
+                    data.paralysis_detection || 'N/A';
+
+            document.getElementById('insights-text').innerHTML = data.ai_insights || 'No insights available';
+        }
+
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.innerHTML = `
+                <i class="fas fa-exclamation-circle"></i>
+                ${message}
+            `;
+
+            // Remove existing error messages
+            document.querySelectorAll('.error-message').forEach(el => el.remove());
+
+            // Insert error message after upload section
+            document.querySelector('.upload-section').after(errorDiv);
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+
+        // Image preview functionality
+        document.getElementById('file-input').addEventListener('change', function (e) {
+            const reader = new FileReader();
+            reader.onload = function () {
+                const preview = document.getElementById('preview-image');
+                preview.src = reader.result;
+                preview.style.display = 'block';
+            }
+            reader.readAsDataURL(e.target.files[0]);
+        });
+    </script>
+</body>
+
+</html>
