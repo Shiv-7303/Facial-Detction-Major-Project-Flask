@@ -26,6 +26,7 @@ class FaceDetector:
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         return self.predictor(gray, face_rect)
 
+#api key
 class AIInsightGenerator:
     def __init__(self, api_key):
         try:
