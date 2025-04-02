@@ -12,6 +12,7 @@ import os
 app = Flask(__name__)
 
 # Initialize Gemini API
+#Gemini
 class AIInsightGenerator:
     def __init__(self, api_key):
         try:
